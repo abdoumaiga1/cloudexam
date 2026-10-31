@@ -70,9 +70,10 @@ jobs:
         env:
           DYNAMODB_ENDPOINT: http://localhost:8000
         run: pytest -v
-      - name: Run Bandit security scan
+            - name: Run Bandit security scan
         run: bandit -r src -ll
-              - name: Run Gitleaks secret scan
+
+      - name: Run Gitleaks secret scan
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
