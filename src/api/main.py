@@ -11,7 +11,6 @@ sys.path.insert(
 )
 
 from database import save_submission, table
-
 from submit_exam import lambda_handler
 
 app = FastAPI(
@@ -54,9 +53,13 @@ def create_submission(payload: ExamSubmission):
     return json.loads(response["body"])
 
 
-@app.get("/submissions/{submission_id}")
+@app.get(
+    "/submissions/{submission_id}",
+    responses={
+        404: {"description": "Submission not found"}
+    }
+)
 def get_submission(submission_id: str):
-
     response = table.get_item(
         Key={"submission_id": submission_id}
     )
