@@ -73,11 +73,10 @@ jobs:
 
           print("DynamoDB table created successfully")
           PY
-
-      - name: Run automated tests
+      - name: Run automated tests with coverage
         env:
           DYNAMODB_ENDPOINT: http://localhost:8000
-        run: pytest -v
+        run: pytest --cov=src --cov-report=term-missing --cov-report=xml
 
       - name: Run Bandit security scan
         run: bandit -r src -ll
