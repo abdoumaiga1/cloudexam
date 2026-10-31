@@ -87,3 +87,96 @@ jobs:
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+name: CloudExam CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Test and Security Scan
+    runs-on: ubuntu-latest
+
+    services:
+      dynamodb:
+        image: amazon/dynamodb-local:latest
+        ports:
+          - 8000:8000
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Wait for DynamoDB and create table
+        run: |
+          python - <<'PY'
+          import boto3
+          import time
+
+          client = boto3.client(
+              "dynamodb",
+              endpoint_url="http://localhost:8000",
+              region_name="us-east-1",
+              aws_access_key_id="local",
+              aws_secret_access_key="local"
+          )
+
+          for attempt in range(30):
+              try:
+                  client.list_tables()
+                  break
+              except Exception:
+                  if attempt == 29:
+                      raise
+                  time.sleep(2)
+
+          client.create_table(
+              TableName="CloudExamSubmissions",
+              AttributeDefinitions=[
+                  {"AttributeName": "submission_id", "AttributeType": "S"}
+              ],
+              KeySchema=[
+                  {"AttributeName": "submission_id", "KeyType": "HASH"}
+              ],
+              BillingMode="PAY_PER_REQUEST"
+          )
+
+          print("DynamoDB table created successfully")
+          PY
+
+      - name: Run automated tests
+        env:
+          DYNAMODB_ENDPOINT: http://localhost:8000
+        run: pytest -v
+
+      - name: Run Bandit security scan
+        run: bandit -r src -ll
+
+      - name: Run Gitleaks secret scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: SonarQube Cloud analysis
+        uses: SonarSource/sonarqube-scan-action@v8.3.0
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
