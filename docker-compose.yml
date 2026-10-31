@@ -1,0 +1,17 @@
+services:
+  api:
+    build: .
+    container_name: cloudexam-api
+    ports:
+      - "8001:8001"
+    environment:
+      DYNAMODB_ENDPOINT: http://dynamodb:8000
+    depends_on:
+      - dynamodb
+
+  dynamodb:
+    image: amazon/dynamodb-local:latest
+    container_name: cloudexam-dynamodb-compose
+    command: "-jar DynamoDBLocal.jar -sharedDb -inMemory"
+    ports:
+      - "8002:8000"
