@@ -1,14 +1,21 @@
 
+
 name: CloudExam CI
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
   pull_request:
-    branches: [main]
+    branches:
+      - main
+
+permissions:
+  contents: read
 
 jobs:
   test:
+    name: Test and Security Scan
     runs-on: ubuntu-latest
 
     services:
@@ -20,6 +27,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -70,7 +79,8 @@ jobs:
         env:
           DYNAMODB_ENDPOINT: http://localhost:8000
         run: pytest -v
-            - name: Run Bandit security scan
+
+      - name: Run Bandit security scan
         run: bandit -r src -ll
 
       - name: Run Gitleaks secret scan
