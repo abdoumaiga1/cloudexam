@@ -72,3 +72,7 @@ jobs:
         run: pytest -v
       - name: Run Bandit security scan
         run: bandit -r src -ll
+              - name: Run Gitleaks secret scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
