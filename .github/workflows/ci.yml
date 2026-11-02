@@ -1,4 +1,5 @@
 
+
 name: CloudExam CI
 
 on:
@@ -73,6 +74,7 @@ jobs:
 
           print("DynamoDB table created successfully")
           PY
+
       - name: Run automated tests with coverage
         env:
           DYNAMODB_ENDPOINT: http://localhost:8000
@@ -80,6 +82,11 @@ jobs:
 
       - name: Run Bandit security scan
         run: bandit -r src -ll
+
+      - name: Audit Python dependencies
+        run: |
+          pip install pip-audit
+          pip-audit -r requirements.txt
 
       - name: Run Gitleaks secret scan
         uses: gitleaks/gitleaks-action@v2
