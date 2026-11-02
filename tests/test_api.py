@@ -1,4 +1,5 @@
-
+from unittest.mock import patch
+from botocore.exceptions import ClientError
 
 import sys
 from pathlib import Path
@@ -42,5 +43,47 @@ def test_create_submission():
 
 def test_get_nonexistent_submission():
     response = client.get("/submissions/nonexistent-id")
-
     assert response.status_code == 404
+
+def test_create_submission_with_empty_answers():
+    payload = {
+        "student_id": "student-006",
+        "exam_id": "medical-exam-004",
+        "answers": {}
+    }
+
+    response = client.post("/submissions", json=payload)
+
+    assert response.status_code == 422
+
+
+def test_create_submission_with_empty_student_id():
+    payload = {
+        "student_id": "",
+        "exam_id": "medical-exam-004",
+        "answers": {
+            "question-1": "A"
+        }
+    }
+
+    response = client.post("/submissions", json=payload)
+
+    assert response.status_code == 422
+
+def test_database_failure_returns_503():
+    with patch(
+        "src.api.main.table.get_item",
+        side_effect=ClientError(
+            {
+                "Error": {
+                    "Code": "InternalServerError",
+                    "Message": "Database unavailable"
+                }
+            },
+            "GetItem"
+        )
+    ):
+        response = client.get("/submissions/test-id")
+
+    assert response.status_code == 503
+    assert response.json()["detail"] == "Database temporarily unavailable"
